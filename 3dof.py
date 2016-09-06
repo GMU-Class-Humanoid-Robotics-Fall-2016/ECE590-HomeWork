@@ -41,8 +41,8 @@ def calculate_position(x, y, z):
 		X_position += lengths[i] * math.cos(angles[i])
 		Y_position += lengths[i] * math.sin(angles[i])
 	
-	X_position = int(X_position)
-	Y_position = int(Y_position)
+	X_position = float("{0:.2f}".format(X_position))
+	Y_position = float("{0:.2f}".format(Y_position))
 	
 	position = (X_position, Y_position)
 	return position
