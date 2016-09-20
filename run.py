@@ -374,6 +374,17 @@ def get_ready_left():
 	LAR_final = ref.ref[ha.LAR]
 	RHR_final = ref.ref[ha.RHR]
 	LHR_final = ref.ref[ha.LHR]
+
+def stand():
+	ref.ref[ha.RAP] = 0
+	ref.ref[ha.LAP] = 0
+	ref.ref[ha.LKN] = 0
+	ref.ref[ha.RKN] = 0
+	ref.ref[ha.RHP] = 0
+	ref.ref[ha.LHP] = 0
+	r.put(ref)
+	time.sleep(0.5)
+	
 	
 def main():
 	
