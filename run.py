@@ -37,13 +37,22 @@ from ctypes import *
 
 import numpy as np
 
-step_distance = 0.01
+step_distance = 0
 step_count = 0
-step_end = 3/step_distance
+step_end = 0
 length_1 = 0.34003
 length_2 = 0.34038
 length_3 = 0.11497
-
+RAP_final = 0
+RKN_final = 0
+RHP_final = 0
+LAP_final = 0
+LKN_final = 0
+LHP_final = 0
+RAR_final = 0
+LAR_final = 0
+RHR_final = 0
+LHR_final = 0
 
 if len(sys.argv) == 2:
 	print 'Using given step distance'
@@ -386,34 +395,27 @@ def stand():
 	time.sleep(0.5)
 	
 	
-def main():
+initialize()
 	
-	initialize()
-	
-	step_distance = 0.01
-	step_count = 0
-	step_end = 3/step_distance
-	
-	while step_end > 0:
-		if step_count == 0:
-			initialize()
-			init_ready()
-			init_lean()
-			init_done()
-			step_count = 1
-		if step_count == 1:
-			step_count = 2
-			step_end -= 1
-			right_step()
-			shift_right_weight()
-			get_ready_right()
-		if step_count == 2:
-			step_count = 1
-			step_end -= 1
-			left_step()
-			shift_left_weight()
-			get_ready_left()
-			
-	print("DONE")
+while step_end > 0:
+	if step_count == 0:
+		initialize()
+		init_ready()
+		init_lean()
+		init_done()
+		step_count = 1
+	if step_count == 1:
+		step_count = 2
+		step_end -= 1
+		right_step()
+		shift_right_weight()
+		get_ready_right()
+	if step_count == 2:
+		step_count = 1
+		step_end -= 1
+		left_step()
+		shift_left_weight()
+		get_ready_left()
+		
+print("DONE")
 
-main()
