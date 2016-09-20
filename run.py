@@ -37,19 +37,30 @@ from ctypes import *
 
 import numpy as np
 
-step_distance = 0.01
+step_distance = 0.05
 step_count = 0
 step_end = 3/step_distance
 length_1 = 0.34003
 length_2 = 0.34038
 length_3 = 0.11497
 
+RAP_final = 0
+RKN_final = 0
+RHP_final = 0
+LAP_final = 0
+LKN_final = 0
+LHP_final = 0
+RAR_final = 0
+LHR_final = 0
+LAR_final = 0
+RHR_final = 0
+
 
 if len(sys.argv) == 2:
 	print 'Using given step distance'
 	step_distance = float(sys.argv[1])
 else:
-	print 'Using default step distance'
+	print 'Using default step distance: 0.05'
 	
 # Open Hubo-Ach feed-forward and feed-back (reference and state) channels
 s = ach.Channel(ha.HUBO_CHAN_STATE_NAME)
@@ -79,6 +90,7 @@ def initialize():
 		i += 0.5
 		r.put(ref)
 		time.sleep(.01)
+	print("Robot initialization complete")
 
 #crouch the robot		
 def init_ready():
@@ -93,6 +105,7 @@ def init_ready():
 		r.put(ref)
 		i += 0.05
 		time.sleep(0.5)
+	print("Robot ready")
 		
 # lean the robot forward
 def init_lean():
@@ -105,6 +118,7 @@ def init_lean():
 		r.put(ref)
 		i += 0.01
 		time.sleep(.5)
+	print("Robot lean")
 	
 def init_done():
 	i = 0.5
@@ -115,17 +129,29 @@ def init_done():
 		r.put(ref)
 		i += 0.05
 		time.sleep(.5)
+	global RAP_final
+	global RKN_final
+	global RHP_final
+	global LAP_final
+	global LKN_final
+	global LHP_final
+	global RAR_final
+	global LAR_final
+	global RHR_final
+	global LHR_final
+
 
 	RAP_final = ref.ref[ha.RAP]
 	RKN_final = ref.ref[ha.RKN]
 	RHP_final = ref.ref[ha.RHP]
-	LAP_final = ref.ref[ha.LAP]  
-	LKN_final = ref.ref[ha.LKN] 
-	LHP_final = ref.ref[ha.LHP]  
+	LAP_final = ref.ref[ha.LAP]
+	LKN_final = ref.ref[ha.LKN]
+	LHP_final = ref.ref[ha.LHP]
 	RAR_final = ref.ref[ha.RAR]
 	LAR_final = ref.ref[ha.LAR]
 	RHR_final = ref.ref[ha.RHR]
 	LHR_final = ref.ref[ha.LHR]
+	print("Robot - done")
 
 def right_step():
 	dof_x_position = three_dof(ref.ref[ha.RHP], ref.ref[ha.RHP],ref.ref[ha.RKN] )
@@ -154,6 +180,7 @@ def right_step():
 		right_leg = three_dof(ref.ref[ha.LHP],ref.ref[ha.LHP], ref.ref[ha.LKN])
 		left_leg = three_dof(ref.ref[ha.RHP],ref.ref[ha.RHP],ref.ref[ha.RKN])
 		time.sleep(.0005)
+	print("Robot Right step taken")
 	
 def left_step():
 	dof_x_position = three_dof(ref.ref[ha.LHP], ref.ref[ha.LHP],ref.ref[ha.LKN])
@@ -181,6 +208,7 @@ def left_step():
 		left_leg = three_dof(ref.ref[ha.RHP],ref.ref[ha.RHP],ref.ref[ha.RKN])
 		right_leg = three_dof(ref.ref[ha.LHP],ref.ref[ha.LHP], ref.ref[ha.LKN])
 		time.sleep(.0005)
+	print("Robot left step taken")
 	
 #shift the center of mass over the right
 def shift_right_weight():
@@ -209,14 +237,15 @@ def shift_right_weight():
 			ref.ref[ha.RHR] += rate_r
 			ref.ref[ha.LHR] += rate_r
 		time.sleep(0.0001)
-		r.put(ref)		
+		r.put(ref)
 		time.sleep(0.5)
 
 	while ref.ref[ha.LHP] > -0.75:
 		ref.ref[ha.LHP] -= 0.01
 		ref.ref[ha.LKN] += 0.01
 		r.put(ref)
-	time.sleep(.1)
+		time.sleep(.1)
+	print("Robot weight shifted over right")
 
 #shift the center of mass over the left
 def shift_left_weight():
@@ -253,7 +282,8 @@ def shift_left_weight():
 		ref.ref[ha.RAP] -= 0.01
 		ref.ref[ha.RKN] += 0.01
 		r.put(ref)
-	time.sleep(.1)
+		time.sleep(.1)
+	print("Robot weight shifted over left")
 
 # fix the robot to initial ready position	
 def get_ready_right():
@@ -314,6 +344,7 @@ def get_ready_right():
 	LAR_final = ref.ref[ha.LAR]
 	RHR_final = ref.ref[ha.RHR]
 	LHR_final = ref.ref[ha.LHR]
+	print("Robot ready-right")
 
 #fix the robot to an initial ready positiion
 def get_ready_left():
@@ -374,6 +405,8 @@ def get_ready_left():
 	LAR_final = ref.ref[ha.LAR]
 	RHR_final = ref.ref[ha.RHR]
 	LHR_final = ref.ref[ha.LHR]
+	print("Robot ready - left")
+	
 
 def stand():
 	ref.ref[ha.RAP] = 0
@@ -384,16 +417,13 @@ def stand():
 	ref.ref[ha.LHP] = 0
 	r.put(ref)
 	time.sleep(0.5)
+	print("Robot final stand")
 	
 	
-def main():
-	
-	initialize()
-	
-	step_distance = 0.01
-	step_count = 0
-	step_end = 3/step_distance
-	
+def main():	
+	global step_count
+	global step_end
+
 	while step_end > 0:
 		if step_count == 0:
 			initialize()
@@ -413,7 +443,7 @@ def main():
 			left_step()
 			shift_left_weight()
 			get_ready_left()
-			
-	print("DONE")
+	stand()			
+	print("Robot - DONE")
 
 main()
