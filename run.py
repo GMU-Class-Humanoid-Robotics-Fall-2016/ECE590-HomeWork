@@ -40,25 +40,32 @@ import numpy as np
 step_distance = 0
 step_count = 0
 step_end = 0
+
 length_1 = 0.34003
 length_2 = 0.34038
 length_3 = 0.11497
-RAP_final = 0
-RKN_final = 0
-RHP_final = 0
-LAP_final = 0
-LKN_final = 0
-LHP_final = 0
-RAR_final = 0
-LAR_final = 0
-RHR_final = 0
-LHR_final = 0
+
+RAP_final] = 0
+RKN_final] = 1
+RHP_final] = 2
+LAP_final] = 3
+LKN_final] = 4
+LHP_final] = 5
+RAR_final] = 6
+LAR_final] = 7
+RHR_final] = 8
+LHR_final] = 9
+
+joint_final = {0,0,0,0,0,0,0,0,0,0}
 
 if len(sys.argv) == 2:
 	print 'Using given step distance'
 	step_distance = float(sys.argv[1])
 else:
-	print 'Using default step distance'
+	print 'Using default step distance 0.02'
+	step_distance = 0.02
+	
+step_end = 3/step_distance
 	
 # Open Hubo-Ach feed-forward and feed-back (reference and state) channels
 s = ach.Channel(ha.HUBO_CHAN_STATE_NAME)
@@ -115,7 +122,7 @@ def init_lean():
 		i += 0.01
 		time.sleep(.5)
 	
-def init_done():
+def init_done(joint_final):
 	i = 0.5
 	while i <0.75:
 		ref.ref[ha.RAP] = -i
@@ -125,17 +132,18 @@ def init_done():
 		i += 0.05
 		time.sleep(.5)
 
-	RAP_final = ref.ref[ha.RAP]
-	RKN_final = ref.ref[ha.RKN]
-	RHP_final = ref.ref[ha.RHP]
-	LAP_final = ref.ref[ha.LAP]  
-	LKN_final = ref.ref[ha.LKN] 
-	LHP_final = ref.ref[ha.LHP]  
-	RAR_final = ref.ref[ha.RAR]
-	LAR_final = ref.ref[ha.LAR]
-	RHR_final = ref.ref[ha.RHR]
-	LHR_final = ref.ref[ha.LHR]
+	joint_final[RAP_final] = ref.ref[ha.RAP]
+	joint_final[RKN_final] = ref.ref[ha.RKN]
+	joint_final[RHP_final] = ref.ref[ha.RHP]
+	joint_final[LAP_final] = ref.ref[ha.LAP]  
+	joint_final[LKN_final] = ref.ref[ha.LKN] 
+	joint_final[LHP_final] = ref.ref[ha.LHP]  
+	joint_final[RAR_final] = ref.ref[ha.RAR]
+	joint_final[LAR_final] = ref.ref[ha.LAR]
+	joint_final[RHR_final] = ref.ref[ha.RHR]
+	joint_final[LHR_final] = ref.ref[ha.LHR]
 
+#Robot raises right leg
 def right_step():
 	dof_x_position = three_dof(ref.ref[ha.RHP], ref.ref[ha.RHP],ref.ref[ha.RKN] )
 	dof_theta = np.arcsin(step_distance/dof_x_position)
@@ -163,7 +171,8 @@ def right_step():
 		right_leg = three_dof(ref.ref[ha.LHP],ref.ref[ha.LHP], ref.ref[ha.LKN])
 		left_leg = three_dof(ref.ref[ha.RHP],ref.ref[ha.RHP],ref.ref[ha.RKN])
 		time.sleep(.0005)
-	
+
+# Robot raises left leg
 def left_step():
 	dof_x_position = three_dof(ref.ref[ha.LHP], ref.ref[ha.LHP],ref.ref[ha.LKN])
 	dof_theta = np.arcsin(step_distance/dof_x_position)
@@ -265,7 +274,7 @@ def shift_left_weight():
 	time.sleep(.1)
 
 # fix the robot to initial ready position	
-def get_ready_right():
+def get_ready_right(joint_final):
 	time.sleep(5)
 	check_one = 0
 	check_two = 0
@@ -274,58 +283,58 @@ def get_ready_right():
 	check_five = 0
 	check_six = 0
 	while check_four+check_three+check_five+check_six+check_one+check_two!= 6:
-		if ref.ref[ha.RKN] < LKN_final -0.001:
+		if ref.ref[ha.RKN] < joint_final[LKN_final] -0.001:
 			ref.ref[ha.RKN] += 0.0005
-		elif ref.ref[ha.RKN] > LKN_final +0.001: 	  
+		elif ref.ref[ha.RKN] > joint_final[LKN_final] +0.001: 	  
 			ref.ref[ha.RKN] -= 0.0005
 		else:
 			check_four = 1 		
-		if ref.ref[ha.LKN] < RKN_final -0.001:
+		if ref.ref[ha.LKN] < joint_final[RKN_final] -0.001:
 			ref.ref[ha.LKN] += 0.0005
-		elif ref.ref[ha.LKN] > RKN_final +.001: 	  
+		elif ref.ref[ha.LKN] > joint_final[RKN_final] +.001: 	  
 			ref.ref[ha.LKN] -= 0.0005
 		else:
 			check_three = 1
-		if ref.ref[ha.LHP] < RHP_final -.001:
+		if ref.ref[ha.LHP] < joint_final[RHP_final] -.001:
 			ref.ref[ha.LHP] += 0.0005
-		elif ref.ref[ha.LHP] > RHP_final +.001: 	  
+		elif ref.ref[ha.LHP] > joint_final[RHP_final] +.001: 	  
 			ref.ref[ha.LHP] -= 0.0005
 		else:
 			check_six = 1 
-		if ref.ref[ha.RHP] < LHP_final -.001:
+		if ref.ref[ha.RHP] < joint_final[LHP_final] -.001:
 			ref.ref[ha.RHP] += 0.0005
-		elif ref.ref[ha.RHP] > LHP_final +.001: 	  
+		elif ref.ref[ha.RHP] > joint_final[LHP_final] +.001: 	  
 			ref.ref[ha.RHP] -= 0.0005
 		else:
 			check_five = 1 
-		if ref.ref[ha.RAP] < LAP_final -.001:
+		if ref.ref[ha.RAP] < joint_final[LAP_final] -.001:
 			ref.ref[ha.RAP] += 0.00025
-		elif ref.ref[ha.RAP] > LAP_final +.001: 	  
+		elif ref.ref[ha.RAP] > joint_final[LAP_final] +.001: 	  
 			ref.ref[ha.RAP] -= 0.00025
 		else:
 			check_one = 1 
-		if ref.ref[ha.LAP] < RAP_final -.001: 
+		if ref.ref[ha.LAP] < joint_final[RAP_final] -.001: 
 			ref.ref[ha.LAP] += 0.00025
-		elif ref.ref[ha.LAP] > RAP_final +.001: 	  
+		elif ref.ref[ha.LAP] > joint_final[RAP_final] +.001: 	  
 			ref.ref[ha.LAP] -= 0.00025
 		else:
 			check_two = 1
 		r.put(ref)
 		time.sleep(.01)
 
-	RAP_final = ref.ref[ha.RAP]
-	RKN_final = ref.ref[ha.RKN]
-	RHP_final = ref.ref[ha.RHP]
-	LAP_final = ref.ref[ha.LAP]  
-	LKN_final = ref.ref[ha.LKN] 
-	LHP_final = ref.ref[ha.LHP]  
-	RAR_final = ref.ref[ha.RAR]
-	LAR_final = ref.ref[ha.LAR]
-	RHR_final = ref.ref[ha.RHR]
-	LHR_final = ref.ref[ha.LHR]
+	joint_final[RAP_final] = ref.ref[ha.RAP]
+	joint_final[RKN_final] = ref.ref[ha.RKN]
+	joint_final[RHP_final] = ref.ref[ha.RHP]
+	joint_final[LAP_final] = ref.ref[ha.LAP]  
+	joint_final[LKN_final] = ref.ref[ha.LKN] 
+	joint_final[LHP_final] = ref.ref[ha.LHP]  
+	joint_final[RAR_final] = ref.ref[ha.RAR]
+	joint_final[LAR_final] = ref.ref[ha.LAR]
+	joint_final[RHR_final] = ref.ref[ha.RHR]
+	joint_final[LHR_final] = ref.ref[ha.LHR]
 
 #fix the robot to an initial ready positiion
-def get_ready_left():
+def get_ready_left(joint_final):
 	time.sleep(5)
 	check_one = 0
 	check_two = 0
@@ -334,56 +343,57 @@ def get_ready_left():
 	check_five = 0
 	check_six = 0
 	while check_four+check_three+check_five+check_six+check_one+check_two!= 6:
-		if ref.ref[ha.LKN] < RKN_final - 0.001:
+		if ref.ref[ha.LKN] < joint_final[RKN_final] - 0.001:
 			ref.ref[ha.LKN] += 0.0005
-		elif ref.ref[ha.LKN] > RKN_final + 0.001: 	  
+		elif ref.ref[ha.LKN] > joint_final[RKN_final] + 0.001: 	  
 			ref.ref[ha.LKN] -= 0.0005
 		else:
 			check_four = 1 		
-		if ref.ref[ha.RKN] < LKN_final -.001:
+		if ref.ref[ha.RKN] < joint_final[LKN_final] -.001:
 			ref.ref[ha.RKN] += 0.0005
-		elif ref.ref[ha.RKN] > LKN_final + 0.001: 	  
+		elif ref.ref[ha.RKN] > joint_final[LKN_final] + 0.001: 	  
 			ref.ref[ha.RKN] -= 0.0005
 		else:
 			check_three = 1
-		if ref.ref[ha.RHP] < LHP_final -0.001:
+		if ref.ref[ha.RHP] < joint_final[LHP_final] -0.001:
 			ref.ref[ha.RHP] += 0.0005
-		elif ref.ref[ha.RHP] > LHP_final +.001: 	  
+		elif ref.ref[ha.RHP] > joint_final[LHP_final] +.001: 	  
 			ref.ref[ha.RHP] -= 0.0005
 		else:
 			check_six = 1 
-		if ref.ref[ha.LHP] < RHP_final -.001:
+		if ref.ref[ha.LHP] < joint_final[RHP_final] -.001:
 			ref.ref[ha.LHP] += 0.0005
-		elif ref.ref[ha.LHP] > RHP_final +.001: 	  
+		elif ref.ref[ha.LHP] > joint_final[RHP_final] +.001: 	  
 			ref.ref[ha.LHP] -= 0.0005
 		else:
 			check_five = 1 
-		if ref.ref[ha.LAP] < RAP_final -.001:
+		if ref.ref[ha.LAP] < joint_final[RAP_final] -.001:
 			ref.ref[ha.LAP] += 0.00025
-		elif ref.ref[ha.LAP] > RAP_final +.001: 	  
+		elif ref.ref[ha.LAP] > joint_final[RAP_final] +.001: 	  
 			ref.ref[ha.LAP] -= 0.00025
 		else:
 			check_one = 1 
-		if ref.ref[ha.RAP] < LAP_final -.001: 
+		if ref.ref[ha.RAP] < joint_final[LAP_final] -.001: 
 			ref.ref[ha.RAP] += 0.00025
-		elif ref.ref[ha.RAP] > LAP_final +.001: 	  
+		elif ref.ref[ha.RAP] > joint_final[LAP_final] +.001: 	  
 			ref.ref[ha.RAP] -= 0.00025
 		else:
 			check_two = 1
 		r.put(ref)
 		time.sleep(.01)
 
-	RAP_final = ref.ref[ha.RAP]
-	RKN_final = ref.ref[ha.RKN]
-	RHP_final = ref.ref[ha.RHP]
-	LAP_final = ref.ref[ha.LAP]  
-	LKN_final = ref.ref[ha.LKN] 
-	LHP_final = ref.ref[ha.LHP]  
-	RAR_final = ref.ref[ha.RAR]
-	LAR_final = ref.ref[ha.LAR]
-	RHR_final = ref.ref[ha.RHR]
-	LHR_final = ref.ref[ha.LHR]
+	joint_final[RAP_final] = ref.ref[ha.RAP]
+	joint_final[RKN_final] = ref.ref[ha.RKN]
+	joint_final[RHP_final] = ref.ref[ha.RHP]
+	joint_final[LAP_final] = ref.ref[ha.LAP]  
+	joint_final[LKN_final] = ref.ref[ha.LKN] 
+	joint_final[LHP_final] = ref.ref[ha.LHP]  
+	joint_final[RAR_final] = ref.ref[ha.RAR]
+	joint_final[LAR_final] = ref.ref[ha.LAR]
+	joint_final[RHR_final] = ref.ref[ha.RHR]
+	joint_final[LHR_final] = ref.ref[ha.LHR]
 
+# put the robot in stand position
 def stand():
 	ref.ref[ha.RAP] = 0
 	ref.ref[ha.LAP] = 0
@@ -393,10 +403,8 @@ def stand():
 	ref.ref[ha.LHP] = 0
 	r.put(ref)
 	time.sleep(0.5)
-	
-	
-initialize()
-	
+
+
 while step_end > 0:
 	if step_count == 0:
 		initialize()
@@ -417,5 +425,6 @@ while step_end > 0:
 		shift_left_weight()
 		get_ready_left()
 		
+stand()		
 print("DONE")
 
