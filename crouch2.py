@@ -34,8 +34,7 @@ import ach
 import sys
 import time
 from ctypes import *
-
-import numpy as np
+import math
 
 if len(sys.argv) == 2:
 	print 'Using given height'
@@ -60,59 +59,68 @@ ref = ha.HUBO_REF()
 # Get the current feed-forward (state) 
 [statuss, framesizes] = s.get(state, wait=False, last=False)
 
-# x is 0
-y = height
+# x is 0 
+y = height #0.5 for assignment
 d1 = 0.4
-d2 = 0.4
+d2 = 0.4 
+# d1 + d2 = 0.8 which is height of robots waist from 
 
-theta1 = 0.6754
-theta2 = 1.7802
+def calc_theta_2(y,d1,d2):
+	numerator = y**2 - d1**2 - d2**2
+	denominator = 2 * d1 * d2
+	theta2 = math.acos(float(numerator)/denominator)
+	return theta2
 
-# put the robot in a stable positiion		
-def initialize():
-	i = 0
-	while i < 10:
-		ref.ref[ha.RSR] -= 0.01
-		ref.ref[ha.LSR] += 0.01
-		i += 0.5
-		r.put(ref)
-		time.sleep(.01)
-	print("ROBOT - initialize() done")
+def calc_theta_1(y, d1, d2, theta2):
+	numerator = y * (d1 + d2*math.cos(theta2))
+	denominator = y*(d2*math.sin(theta2))
+	theta1 = math.atan2(numerator,denominator)
+	return theta1
+
+theta2 = calc_theta_2(y,d1,d2)
+theta1 = calc_theta_1(y,d1,d2,theta2)
+theta2b = math.pi - theta2
+factor = theta2b/theta1
+
+print "Theta_1 is %f Theta_2 is %f" %(theta1,theta2b)
 
 #crouch the robot		
-def init_ready():
-	i = 0
-	while i < 0.7:
+def crouch():
+	i = 0;
+	while i < theta1:
 		ref.ref[ha.RAP] = -i
 		ref.ref[ha.LAP] = -i
-		ref.ref[ha.LKN] = 2*i
-		ref.ref[ha.RKN] = 2*i
+		ref.ref[ha.LKN] = factor*i
+		ref.ref[ha.RKN] = factor*i
 		ref.ref[ha.RHP] = -i
 		ref.ref[ha.LHP] = -i
 		r.put(ref)
 		i += 0.05
 		time.sleep(0.5)
-	print ("ROBOT - init_ready() done")
+	print ("ROBOT - crouch() done")
 
 # put the robot in stand position
 def stand():
-	ref.ref[ha.RAP] = 0
-	ref.ref[ha.LAP] = 0
-	ref.ref[ha.LKN] = 0
-	ref.ref[ha.RKN] = 0
-	ref.ref[ha.RHP] = 0
-	ref.ref[ha.LHP] = 0
-	r.put(ref)
-	time.sleep(0.5)
+	i = theta1
+	while i > 0:
+		ref.ref[ha.RAP] = -i
+		ref.ref[ha.LAP] = -i
+		ref.ref[ha.LKN] = factor*i
+		ref.ref[ha.RKN] = factor*i
+		ref.ref[ha.RHP] = -i
+		ref.ref[ha.LHP] = -i
+		i -= 0.05
+		r.put(ref)
+		time.sleep(0.5)
 	print("ROBOT - stand() done")
-
-#initialize()
-time.sleep(1)
-init_ready()
-time.sleep(10)
-stand()
-time.sleep(1)
+	
+num = 0
+while num < 5:
+	crouch()
+	time.sleep(10)
+	stand()
+	time.sleep(2)
+	num += 1
 print("DONE")
-
 
 
