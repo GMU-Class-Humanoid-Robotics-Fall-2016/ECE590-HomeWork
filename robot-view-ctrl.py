@@ -117,7 +117,6 @@ def findBalls(img):
 		print"red center %d %d" %(red_center[0],red_center[1])
 	
 		cv2.circle(img, (int(x),int(y)), 5,(0,0,0),2)
-		#cv2.circle(img,red_center,5,(0,0,255),-1)
 	
 	elif len(green_cnts) > 0:
 		c = max(green_cnts,key=cv2.contourArea)
@@ -127,7 +126,6 @@ def findBalls(img):
 		print "green center %d %d" %(green_center[0],green_center[1])
 		
 		cv2.circle(img, (int(x),int(y)), 5,(0,0,0),2)
-		#cv2.circle(img,green_center,5,(0,0,255),-1)
 		
 	elif len(blue_cnts) > 0:
 		c = max(blue_cnts,key=cv2.contourArea)
@@ -137,8 +135,7 @@ def findBalls(img):
 		print "blue center %d %d" %(blue_center[0],blue_center[1])
 		
 		cv2.circle(img, (int(x),int(y)), 5,(0,0,0),2)
-		#cv2.circle(img,blue_center,5,(0,0,255),-1)
-	i = 100
+		
 	cv2.imshow("findBalls",img)
 	cv2.waitKey(10)
 	 
