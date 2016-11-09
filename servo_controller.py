@@ -25,74 +25,74 @@ class SERVO_DATA(Structure):
 				("vel"	, c_double),
 				("tor"	, c_double)]
 	
-def getDegrees(enc):
-   DPT = float(300/1024)
-   deg = float((enc - 1024/2)*DPT)
-   return int(deg)
 
-def getEncoders(deg):
-   DPT = float(300.0/1024.0)
-   enc = deg/DPT + 512
-   return [enc/16 % 16,(enc/16%16)/16]
-   
-def getTorque(kgfcm):
-	dynTorBits = int((torque * MAXBITS)/ MAXTOR)
-	dynTorLow = dynTorBits & 0xff
-	dynTorHigh = (dynTorBits >> 8) & 0xff
-	return [dynTorHigh, dynTorLow]
+def getEncPos(deg):
+	pos_bits = int(( (deg + 150.0)*1024.0 )/300.0)
+	pos_low = pos_bits & 0xff
+	pos_high = (pos_bits >> 8) & 0xff
+	return [pos_high, pos_low]
+
+def getDegrees(encpos):
+	return (encpos*300.0/1024.0) - 150.0
 	
-def getVelocity(rpm):
-	dynVelBits = int((vel * MAXBITS)/MAXVEL)
-	dynVelLow = dynVelBits & 0xff
-	dynVelHigh = (dynVelBits >> 8) & 0xff
-	return [dynVelHigh, dynVelLow]
+def getEncVel(vel):
+	vel_bits = int((vel * 1024.0)/114.0)
+	vel_low = vel_bits & 0xff
+	vel_high = (vel_bits >> 8) & 0xff
+	return [vel_high, vel_low]
+	
+def getVelocity(encvel):
+	return (encvel*114.0/1024.0)
+	
+def getEncTor(tor):
+	tor_bits = int((tor * 1024.0)/ 16.5)
+	tor_low = tor_bits & 0xff
+	tor_high = (tor_bits >> 8) & 0xff
+	return [tor_high, tor_low]
+	
+def getTorque(enctor):
+	return (enctor*16.5/1024.0)
 
 def receive_command(servo_id):
 	a_head = [0xff, 0xff]
-	a_id = [servo_id]
+	a_id = [servo_id & 0xff]
 	a_len = [0x04]
 	a_cmd = [0x02]
 	a_address = [0x24]
 	a_read_l = [0x06]
-	a_sum = [~(a_id[0] + a_len[0] + a_cmd[0] + a_address[0] + a_read_l[0] ) & 0xff]  # get checksum
+	a_sum = [~(a_id[0] + a_len[0] + a_cmd[0] + a_address[0] + a_read_l[0] ) & 0xff]
 	out_put= a_head + a_id + a_len + a_cmd + a_address + a_read_l + a_sum
 
 	the_out = bytearray(out_put)
 	ser.write(the_out)
 	
 	input_byte = bytearray(12)
-	input_byte2 = [0,0,0,0,0,0,0,0,0,0,0,0]
+	input_byte2 = [0]*12
 	
 	for i in range(12):
 		input_byte[i] = ser.read(1)
 		input_byte2[i] =  int(input_byte[i])
 		
-
-	######################
-	inHead		= [input_byte2[0], input_byte2[1]]
-	inId		= input_byte2[2] 
-	inLen		= input_byte2[3]
+	b_Head = [input_byte2[0], input_byte2[1]]
+	b_Id = input_byte2[2] 
+	b_Len = input_byte2[3]
+	b_Pos =  ((input_byte2[6] & 0x03) << 8) + input_byte2[5]
+	b_vel_direc = (input_byte2[8] >> 2)
+	b_Vel =  ((input_byte2[8] & 0x03) << 8) + input_byte2[7]
+	b_tor_direc = (input_byte2[10] >> 2)
+	b_Tor = ((input_byte2[10] & 0x03) << 8) + input_byte2[9]
+	b_Sum = input_byte2[11]
 	
-	inPos		=  ((input_byte2[6] & 0x03) << 8) + input_byte2[5]
+	if(b_vel_direc):
+		b_Vel = b_Vel * -1.0
+	if(b_tor_direc):
+		b_Tor = b_Tor * -1.0
 	
-	inVelDirection = (input_byte2[8] >> 2)
-	inVel		=  ((input_byte2[8] & 0x03) << 8) + input_byte2[7]
+	pos = getEncPos(b_Pos)
+	vel = getEncVel(b_Vel)
+	tor = getEncTor(b_Tor)
 	
-	inTorDirection = (input_byte2[10] >> 2)
-	inTor		= ((input_byte2[10] & 0x03) << 8) + input_byte2[9]
-	
-	inSum		= input_byte2[11]
-	
-	if(inVelDirection):
-		inVel = inVel * -1.0
-	if(inTorDirection):
-		inTor = inTor * -1.0
-	
-	pos = dynPosToDeg(inPos)
-	vel = dynVelToRPM(inVel)
-	tor = dynTorqueToKGFCM(inTor)
-	
-	return [inId, pos, vel, tor]
+	return [b_Id, pos, vel, tor]
    
   
 def perform_command(servo_id,degrees,velocity=None,torque=None):
@@ -101,17 +101,17 @@ def perform_command(servo_id,degrees,velocity=None,torque=None):
 	tor_h = 0x00
 	tor_l = 0xff
 	
-	[pos_h,pos_l] = getEncoders(degrees)
+	[pos_h,pos_l] = getEncPos(degrees)
 	
-	if(vel):
-		[vel_h,vel_l] = getVelocity(velocity)
+	if(velocity != None):
+		[vel_h,vel_l] = getEncVel(velocity)
 		
-	if(torque):
-		[vel_h,vel_l] = getVelocity(velocity)
-		[tor_h,tor_l] = getTorque(torque)
+	if(torque != None):
+		[vel_h,vel_l] = getEncVel(velocity)
+		[tor_h,tor_l] = getEncTor(torque)
 		
 	a_head = [0xff, 0xff]
-	a_id = [dynId]
+	a_id = [servo_id & 0xff]
 	a_len = [0x05]
 	a_cmd = [0x03]
 	a_address = [0x1e]
@@ -125,27 +125,23 @@ def perform_command(servo_id,degrees,velocity=None,torque=None):
 	a_sum = [~(a_id[0] + a_len[0] + a_cmd[0] + a_address[0] + a_goal_l[0] + a_goal_h[0]) & 0xff]
 	out_put = a_head + a_id + a_len + a_cmd + a_address + a_goal_l + a_goal_h + a_sum
 
-	if(torque):
+	if(torque != None):
 		a_len = [0x07]
 		a_sum = [~(a_id[0] + a_len[0] + a_cmd[0] + a_address[0] + a_goal_l[0] + a_goal_h[0] + a_vel_l[0] + a_vel_h[0] + a_tor_l[0] + a_tor_h[0]) & 0xff]  # get checksum
 		out_put = a_head + a_id + a_len + a_cmd + a_address + a_goal_l + a_goal_h + a_vel_l + a_vel_h + a_tor_l + a_tor_h + a_sum
 		
-	elif(vel):
+	elif(velocity != None):
 		a_len = [0x09]
 		a_sum = [~(a_id[0] + a_len[0] + a_cmd[0] + a_address[0] + a_goal_l[0] + a_goal_h[0] + a_vel_l[0] + a_vel_h[0]) & 0xff]  # get checksum
 		out_put = a_head + a_id + a_len + a_cmd + a_address + a_goal_l + a_goal_h + a_vel_l + a_vel_h + a_sum
     
 	the_out_put = bytearray(out_put)
-	print(out_put)
 	ser.write(the_out_put)
-	
-	feedback_list = ser.read(6)
-	
+		
 def feedback(signum, stack):
-	for i in range(2):
+	for i in range(0,2):
 		[output_data.id, output_data.pos, output_data.vel, output_data.tor] = receive_command(i+2)
 		dout.put(output_data)
-		print "Sent Current Pos, Vel, Torque"
 	
 din = ach.Channel('servo_controller')
 dout = ach.Channel('servo_commander')
